@@ -11,9 +11,15 @@ import (
 func setupHandlers() *http.ServeMux {
 	mux := http.NewServeMux()
 
+	const STATIC_DIR = "./ui/static/"
+
 	mux.HandleFunc("/", home)
 	mux.HandleFunc("/snippet/view", snippetView)
 	mux.HandleFunc("/snippet/create", snippetCreate)
+
+	log.Printf("Starting static file-server from %s", STATIC_DIR)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(STATIC_DIR))))
+
 	return mux
 }
 
