@@ -3,18 +3,23 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
+	infoLogger := log.New(os.Stdin, "DEBUG:\t", log.Ldate|log.Ltime)
+	errLogger := log.New(os.Stderr, "ERROR:\t", log.Ldate|log.Ltime|log.Llongfile)
 
-	mux := setupHandlers()
+	app := &Application{infoLogger: infoLogger, errLogger: errLogger}
 
-	server := &http.Server{Addr: ":8080", Handler: mux}
+	mux := setupHandlers(app)
 
-	log.Printf("Listening on port 8080")
+	server := &http.Server{Addr: ":8080", Handler: mux, ErrorLog: errLogger}
+
+	infoLogger.Printf("Listening on port 8080")
 	err := server.ListenAndServe()
 	if err != nil {
-		log.Panicf("Server is not started %v", err)
+		errLogger.Panicf("Server is not started %v", err)
 	}
 
 }

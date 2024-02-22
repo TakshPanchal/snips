@@ -8,23 +8,12 @@ import (
 	"strconv"
 )
 
-func setupHandlers() *http.ServeMux {
-	mux := http.NewServeMux()
-
-	const STATIC_DIR = "./ui/static/"
-
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet/view", snippetView)
-	mux.HandleFunc("/snippet/create", snippetCreate)
-
-	log.Printf("Starting static file-server from %s", STATIC_DIR)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(STATIC_DIR))))
-
-	return mux
+type Application struct {
+	infoLogger, errLogger *log.Logger
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL)
+func (a *Application) home(w http.ResponseWriter, r *http.Request) {
+	a.infoLogger.Println(r.URL)
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -38,9 +27,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 	tmpl, err := template.ParseFiles(homeFiles...)
 
-	log.Println(err)
 	if err != nil {
-		log.Println("Error: ", err)
+		a.errLogger.Println("Error: ", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -48,13 +36,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.ExecuteTemplate(w, "base", nil)
 
 	if err != nil {
-		log.Println("Error: ", err.Error())
+		a.errLogger.Println("Error: ", err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 }
 
-func snippetView(w http.ResponseWriter, r *http.Request) {
+func (a *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 	queryId := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(queryId)
 
@@ -68,8 +56,9 @@ func snippetView(w http.ResponseWriter, r *http.Request) {
 
 // snippetCreate serve /snippet/create endpoint to create a single snippet
 // only POST request is allowed
-func snippetCreate(w http.ResponseWriter, r *http.Request) {
+func (a *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 
+	a.infoLogger.Println("Create API endpoint")
 	// check for POST Method
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
