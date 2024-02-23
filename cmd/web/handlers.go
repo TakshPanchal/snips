@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
@@ -8,8 +9,10 @@ import (
 	"strconv"
 )
 
+// TODO: Create a New Method for Application
 type Application struct {
 	infoLogger, errLogger *log.Logger
+	db                    *sql.DB
 }
 
 func (a *Application) home(w http.ResponseWriter, r *http.Request) {
@@ -57,12 +60,21 @@ func (a *Application) snippetView(w http.ResponseWriter, r *http.Request) {
 // snippetCreate serve /snippet/create endpoint to create a single snippet
 // only POST request is allowed
 func (a *Application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-
-	a.infoLogger.Println("Create API endpoint")
 	// check for POST Method
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		http.Error(w, "Method Not Allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	query := `INSERT INTO snippets (title, content, created, expires)
+	VALUES($1, $2, now(), now() + INTERVAL '1 days') RETURNING id;`
+
+	_, err := a.db.Exec(query, "taksh", "taksh content")
+
+	if err != nil {
+		a.errLogger.Println("Error: ", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
