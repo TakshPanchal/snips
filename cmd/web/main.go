@@ -7,6 +7,7 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/takshpanchal/snips/internal/models"
 )
 
 func main() {
@@ -18,9 +19,15 @@ func main() {
 	if err != nil {
 		errLogger.Panicf("Database connection failed: %v", err)
 	}
+	defer db.Close()
 
-	app := &Application{infoLogger: infoLogger, errLogger: errLogger, db: db}
-
+	app := &Application{
+		infoLogger: infoLogger,
+		errLogger:  errLogger,
+		snippetModel: &models.SnippetModel{
+			DB: db,
+		},
+	}
 	mux := setupHandlers(app)
 
 	server := &http.Server{Addr: ":8080", Handler: mux, ErrorLog: errLogger}
